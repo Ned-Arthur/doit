@@ -1,4 +1,4 @@
-module local/doit
+module https://github.com/Ned-Arthur/doit
 
 go 1.23.3
 
