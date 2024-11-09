@@ -7,14 +7,16 @@ import (
 	"strconv"		// Converting strings
 	"text/tabwriter"// Display tabular data
 	"time"			// Datetime operations
+	"path/filepath" // String to filepath
 
 	"github.com/mergestat/timediff"	// Human-readable time differences
 )
 
 /* CONSTANTS */
 var HEADERS []string = []string{"ID", "Description", "Created", "Completed"}
-const CSVFILE = "data.csv"
 const TIMEFORMAT = "2006-01-02 15:04:05 -0700 MST"
+const CSVFILENAME = "doit.csv"
+var CSVFILE string
 
 /* HELPER FUNCTIONS */
 
@@ -69,6 +71,16 @@ func displayTable(data [][]string) {
 
 /* ENTRY POINT */
 func main() {
+	// Setup our file location
+	binPath, err := os.Executable()
+	if err != nil {
+		fmt.Println("!! Error getting executable path")
+		panic(err)
+	}
+	binDir := filepath.Dir(binPath)
+	CSVFILE = filepath.Join(binDir, CSVFILENAME)
+
+
 	// Deal with our arguments
 	args := os.Args[1:]	// The first element is our path, so ignore it
 
