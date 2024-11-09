@@ -21,7 +21,8 @@ var CSVFILE string
 /* HELPER FUNCTIONS */
 
 /* Read in our data as a [][]string */
-func readData() [][]string { // Open file
+func readData() [][]string {
+	// Open file
 	file, err := os.Open(CSVFILE)
 	if err != nil {
 		panic(err)
