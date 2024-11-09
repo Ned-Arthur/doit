@@ -20,12 +20,18 @@ var CSVFILE string
 
 /* HELPER FUNCTIONS */
 
+/* Exit if file doesn't exist */
+func noFile() {
+	fmt.Println("No data file exists. Create one with `doit init`")
+	os.Exit(1)
+}
+
 /* Read in our data as a [][]string */
 func readData() [][]string {
 	// Open file
 	file, err := os.Open(CSVFILE)
 	if err != nil {
-		panic(err)
+		noFile()
 	}
 	defer file.Close()
 
@@ -40,7 +46,7 @@ func readData() [][]string {
 	return data
 }
 
-func displayTable(data [][]string) {
+func displayTable(data [][]string, onlyUnfinished bool) {
 	// Display a table with specific rows
 	// Automatically displays header as well
 
@@ -50,6 +56,10 @@ func displayTable(data [][]string) {
 	fmt.Fprintln(writer, HEADERS[0] +"\t"+ HEADERS[1] +"\t"+ HEADERS[2] +"\t"+ HEADERS[3])
 
 	for _, row := range data {
+		if row[3] == "true" && onlyUnfinished {
+			continue
+		}
+
 		timeValue, _ := time.Parse(TIMEFORMAT, row[2])
 		timeSince := timediff.TimeDiff(timeValue)
 
@@ -95,6 +105,10 @@ func main() {
 
 	switch args[0] {
 	case "add":
+		if len(args) == 1 {
+			fmt.Println("Please include a quoted task name to add")
+			os.Exit(1)
+		}
 		add(args[1])
 	case "list":
 		if len(args) > 1 {
@@ -103,8 +117,16 @@ func main() {
 			list("")
 		}
 	case "complete":
+		if len(args) == 1 {
+			fmt.Println("Please include a task ID to mark as complete")
+			os.Exit(1)
+		}
 		complete(args[1])
 	case "delete":
+		if len(args) == 1 {
+			fmt.Println("Please include a task ID to delete")
+			os.Exit(1)
+		}
 		deleteTask(args[1])
 	case "init":
 		initData()
@@ -113,7 +135,7 @@ func main() {
 	case "--help":
 		help()
 	default:
-		fmt.Println("Invalid command. Use -h or --help to see valid commands.")
+		fmt.Println("Invalid command: " + args[0] + "  Use -h or --help to see valid commands.")
 	}
 }
 
@@ -133,7 +155,7 @@ func main() {
 	// Open the data file in append mode
 	file, err := os.OpenFile(CSVFILE, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		panic(err)
+		noFile()
 	}
 	defer file.Close()
 
@@ -161,8 +183,13 @@ func list(flags string) {
 		return
 	}
 
+	onlyUnfinished := true
+	if flags == "-a" {
+		onlyUnfinished = false
+	}
+
 	// The function handles the headings for us
-	displayTable(data[1:])
+	displayTable(data[1:], onlyUnfinished)
 }
 
 func complete(taskId string) {
@@ -175,7 +202,8 @@ func complete(taskId string) {
 	}
 
 	if rowToUpdate == 0 {
-		panic("ID doesn't match a task")
+		fmt.Println("ID provided doesn't match a task. See what tasks exist with `doit list -a`")
+		os.Exit(1)
 	}
 
 	data[rowToUpdate][3] = "true"
@@ -193,7 +221,7 @@ func complete(taskId string) {
 	}
 
 	fmt.Println("Successfully completed a task. Good Job!")
-	displayTable([][]string{data[rowToUpdate]})
+	displayTable([][]string{data[rowToUpdate]}, false)
 }
 
 func deleteTask(arg string) {
@@ -207,8 +235,8 @@ func deleteTask(arg string) {
 	}
 
 	if rowToDelete == 0 {
-		panic("No rows to delete")
-		return
+		fmt.Println("ID provided doesn't match a task. To see what tasks exist use `doit list -a`")
+		os.Exit(1)
 	}
 
 	removeData := data[rowToDelete]
@@ -228,7 +256,7 @@ func deleteTask(arg string) {
 	}
 
 	fmt.Println("Successfully deleted row:")
-	displayTable([][]string{removeData})
+	displayTable([][]string{removeData}, false)
 }
 
 func initData() {
@@ -237,7 +265,6 @@ func initData() {
 		panic(err)
 	}
 	defer file.Close()
-
 
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
